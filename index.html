@@ -228,13 +228,10 @@ footer { background: #060d1e; padding: 2.5rem 8rem; display: flex; align-items: 
   border-color: var(--silver); color: var(--silver);
 }
 /* DE/EN content switching */
-[data-lang] { display: none; }
-[data-lang].lang-active { display: block; }
-section[data-lang].lang-active { display: grid; }
-section.hero[data-lang].lang-active,
-section.section-problem[data-lang].lang-active,
-section.section-how[data-lang].lang-active,
-section.section-testimonials[data-lang].lang-active { display: block; }
+/* lang switching handled entirely by JS switchLang() */
+/* Nav language switching */
+.nav-links.nav-hidden { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -254,7 +251,7 @@ section.section-testimonials[data-lang].lang-active { display: block; }
     </a></li>
     <li><a href="#contact" class="nav-cta">Erstgespräch</a></li>
   </ul>
-  <ul class="nav-links lang-active" data-lang="en" id="nav-en" style="display:none">
+  <ul class="nav-links nav-hidden" data-lang="en" id="nav-en">
     <li><a href="#problem">Your Challenge</a></li>
     <li><a href="#trust">Trust Architect</a></li>
     <li><a href="#about">About</a></li>
@@ -652,62 +649,62 @@ section.section-testimonials[data-lang].lang-active { display: block; }
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 
   function switchLang(lang) {
-    // Toggle nav links
+    // Close mobile menu first
+    closeMobile();
+
+    // Toggle nav links - use class instead of inline style for responsive compat
     var navDe = document.getElementById('nav-de');
     var navEn = document.getElementById('nav-en');
     if (navDe && navEn) {
-      navDe.style.display = lang === 'de' ? '' : 'none';
-      navEn.style.display = lang === 'en' ? '' : 'none';
+      navDe.classList.toggle('nav-hidden', lang !== 'de');
+      navEn.classList.toggle('nav-hidden', lang !== 'en');
     }
-    // Toggle hero (special case - full sections)
+
+    // Toggle hero sections
     var heroDe = document.getElementById('hero');
     var heroEn = document.getElementById('hero-en');
     if (heroDe) heroDe.style.display = lang === 'de' ? 'grid' : 'none';
     if (heroEn) heroEn.style.display = lang === 'en' ? 'grid' : 'none';
 
-    // Toggle all other sections by data-lang
-    var deSections = ['problem','trust','how','about','testimonials','contact'];
-    // Map sections to their correct display value
+    // Toggle all content sections with correct display values
     var displayMap = {
-      'trust': 'grid',
-      'about': 'grid',
-      'contact': 'grid',
-      'problem': 'block',
-      'how': 'block',
-      'testimonials': 'block'
+      'problem':      'block',
+      'trust':        'grid',
+      'how':          'block',
+      'about':        'grid',
+      'testimonials': 'block',
+      'contact':      'grid'
     };
-    deSections.forEach(function(id) {
+    Object.keys(displayMap).forEach(function(id) {
       var de = document.getElementById(id);
       var en = document.getElementById(id + '-en');
-      var displayVal = displayMap[id] || 'block';
-      if (de) {
-        de.style.display = lang === 'de' ? displayVal : 'none';
-      }
-      if (en) {
-        en.style.display = lang === 'en' ? displayVal : 'none';
-      }
+      var val = displayMap[id];
+      if (de) de.style.display = lang === 'de' ? val : 'none';
+      if (en) en.style.display = lang === 'en' ? val : 'none';
     });
 
-    // Toggle mobile menu links (simple: hide/show all and swap)
+    // Toggle mobile menu content
     var mobileDe = document.getElementById('mobile-de');
     var mobileEn = document.getElementById('mobile-en');
     if (mobileDe) mobileDe.style.display = lang === 'de' ? 'contents' : 'none';
     if (mobileEn) mobileEn.style.display = lang === 'en' ? 'contents' : 'none';
 
-    // Update buttons
+    // Update lang buttons
     document.getElementById('btn-de').classList.toggle('active', lang === 'de');
     document.getElementById('btn-en').classList.toggle('active', lang === 'en');
 
-    // Update html lang attr
+    // Set html lang attribute
     document.documentElement.lang = lang;
 
-    // Re-run fade-in observer on newly visible elements
-    document.querySelectorAll('.fade-in').forEach(function(el) {
-      var rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight * 0.88) {
-        el.classList.add('visible');
-      }
-    });
+    // Trigger fade-in for newly visible elements
+    setTimeout(function() {
+      document.querySelectorAll('.fade-in').forEach(function(el) {
+        var rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight * 0.92) {
+          el.classList.add('visible');
+        }
+      });
+    }, 50);
 
     // Store preference
     localStorage.setItem('gc_lang', lang);
